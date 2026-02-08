@@ -5,7 +5,7 @@ import "./globals.css";
 
 
 const bricolageGrotesque = Bricolage_Grotesque({
-  variable: "--font-geist-mono",
+  variable: "--font-bricolage-grotesque",
   subsets: ["latin"],
 });
 
