@@ -1,0 +1,98 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Enums
+enum Role {
+  USER
+  ORGANIZER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+// Models
+
+model User {
+  id                String   @id @default(uuid())
+  name              String
+  email             String   @unique
+  passwordHash      String
+  profilePictureUrl String?
+  phoneNumber       String?
+  role              Role     @default(USER)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  organizedEvents Event[]        @relation("OrganizerEvents")
+  bookings        Booking[]
+  notifications   Notification[]
+}
+
+model Event {
+  id              String   @id @default(uuid())
+  organizerUserId String
+  slug            String   @unique
+  title           String
+  description     String   @db.Text
+  startDateTime   DateTime
+  endDateTime     DateTime
+  locationAddress String
+  locationCity    String
+  locationZip     String
+  totalTickets    Int
+  price           Decimal  @db.Decimal(10, 2)
+  type            String
+  imageUrls       String[]
+  tags            String[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  organizer User      @relation("OrganizerEvents", fields: [organizerUserId], references: [id])
+  bookings  Booking[]
+}
+
+model Booking {
+  id          String        @id @default(uuid())
+  userId      String
+  eventId     String
+  status      BookingStatus @default(PENDING)
+  ticketCount Int
+  totalPrice  Decimal       @db.Decimal(10, 2)
+  bookingDate DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id])
+  event Event @relation(fields: [eventId], references: [id])
+}
+
+model Notification {
+  id                String   @id @default(uuid())
+  userId            String
+  type              String
+  message           String
+  relatedResourceId String?
+  isRead            Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+}
