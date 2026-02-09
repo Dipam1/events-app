@@ -1,4 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+// Prefer the local generated Prisma client so runtime uses the generated files
+// placed in `lib/generated/prisma` by the generator.
+import { PrismaClient } from './generated/prisma/client'
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
@@ -9,4 +11,4 @@ export const prisma =
     datasourceUrl: process.env.DATABASE_URL,
   });
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
