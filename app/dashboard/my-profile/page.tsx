@@ -2,23 +2,24 @@
 
 import useUser from '@/lib/useUser'
 
-import { Avatar, Card, Descriptions, Spin, Alert, Typography, Divider, theme, Button, Input, Upload } from 'antd'
+import { Avatar, Card, Descriptions, Spin, Alert, Typography, Divider, theme, Button, Input, Upload, message } from 'antd'
 import { useState, useCallback } from 'react'
 import { EditOutlined } from '@ant-design/icons'
 import uploadAvatar from '@/lib/uploadAvatar'
 
 const Page = () => {
-  const { user, error, isLoading } = useUser()
+  const { user, error, isLoading, mutate } = useUser()
   const { token } = theme.useToken()
   const [editingKey, setEditingKey] = useState<string | null>(null)
   const [editedValue, setEditedValue] = useState<string>('')
+  const [messageApi, contextHolder] = message.useMessage();
 
+
+  /** Handle profile field edits - TODO: implement actual save logic */
   const onEditProfile = useCallback((key: string, value: string) => {
-    console.log('onEditProfile', { key, value })
+    console.log('Editing profile field:', { key, value });
+    // TODO: Add API call to update user profile
   }, [])
-
-
-
 
   if (isLoading) {
     return (
@@ -27,6 +28,7 @@ const Page = () => {
       </div>
     )
   }
+
 
   if (error) {
     return (
@@ -43,9 +45,16 @@ const Page = () => {
       </div>
     )
   }
-  const uploadClicked = (info) => {
-    console.log("CALLED")
-    uploadAvatar(info.file.originFileObj)
+  /** Handle avatar file selection and upload */
+  const handleAvatarUpload = async (uploadFile: { file: File }): Promise<void> => {
+    const success = await uploadAvatar(uploadFile.file);
+    if (success) {
+      messageApi.success('Avatar updated successfully');
+      // Refresh user data to reflect new avatar
+      await mutate('/api/user');
+    } else {
+      messageApi.error('Failed to upload avatar');
+    }
   }
 
   const startEdit = (key: string, currentValue: string) => {
@@ -58,11 +67,14 @@ const Page = () => {
     setEditingKey(null)
   }
 
+
+
   return (
     <Card
       style={{ borderRadius: 16, background: token.colorBgContainer }}
       styles={{ body: { padding: 24 } }}
     >
+      {contextHolder}
       <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
         <div style={{ position: 'relative', cursor: 'pointer' }} className="avatar-container">
           <Avatar size={96} src={user.profilePictureUrl || undefined}>
@@ -91,7 +103,7 @@ const Page = () => {
               name="avatar"
               accept="image/*"
               className="avatar-uploader"
-              // onChange={uploadClicked} THIS IS FUCKING IT UP __ TOO MANY CALLS
+              customRequest={handleAvatarUpload}
               style={{
                 width: '100%',
                 height: '100%',

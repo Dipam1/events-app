@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: "picsum.photos",
         port: "",
       },
+      {
+        protocol: "https",
+        hostname: "dipam-events-project.s3.us-east-1.amazonaws.com",
+        port: "",
+      },
     ],
   },
 };

@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 
 const fetcher = (url: string) =>
   fetch(url).then((res) => {
@@ -12,5 +12,6 @@ export default function useUser() {
     user: data,
     isLoading,
     error,
+    mutate
   };
 }
