@@ -24,7 +24,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!user) {
           return null;
         }
-        const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+        const isPasswordValid = await bcrypt.compare(
+          password,
+          user.passwordHash,
+        );
         if (isPasswordValid) {
           const { passwordHash: _, ...userWithoutPassword } = user;
           return userWithoutPassword;
@@ -33,6 +36,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+        token.isVerified = user.isVerified;
+        token.profilePictureUrl = user.profilePictureUrl;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token) {
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.isVerified = token.isVerified;
+        session.user.profilePictureUrl = token.profilePictureUrl;
+      }
+      return session;
+    },
+  },
+
   pages: {
     signIn: "/login",
   },

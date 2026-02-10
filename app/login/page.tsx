@@ -1,8 +1,8 @@
 'use client'
 import { Button, Card, Divider, Flex, Form, Input, Typography, message, theme } from 'antd'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { signIn } from 'next-auth/react'
+import { redirect } from 'next/navigation'
+import { signIn, useSession } from 'next-auth/react'
 
 interface LoginFormData {
   email: string;
@@ -10,10 +10,16 @@ interface LoginFormData {
 }
 
 const LoginPage = () => {
+  const { data: session } = useSession();
+  const [messageApi, contextHolder] = message.useMessage();
+
+  if (session) {
+    redirect('/')
+  }
+
   const { Title, Text } = Typography
   const { token } = theme.useToken()
   const [form] = Form.useForm();
-  const router = useRouter();
 
   const submitForm = async (formData: LoginFormData) => {
     try {
@@ -22,16 +28,17 @@ const LoginPage = () => {
         email: formData.email,
         password: formData.password,
       });
+      console.log(result);
 
       if (result?.error) {
-        message.error("Invalid email or password");
+        messageApi.error("Invalid email or password");
       } else {
-        message.success("Logged in successfully");
+        messageApi.success("Logged in successfully");
         router.push('/');
         router.refresh(); // Refresh to ensure session is updated
       }
     } catch (error) {
-      message.error((error as Error).message || "Something went wrong");
+      messageApi.error((error as Error).message || "Something went wrong");
     }
   }
 
@@ -48,6 +55,7 @@ const LoginPage = () => {
         padding: '24px 24px 64px',
       }}
     >
+      {contextHolder}
       <Flex
         vertical
         align="center"

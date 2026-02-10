@@ -1,7 +1,8 @@
 'use client'
 import { Button, Card, Divider, Flex, Form, Input, Radio, Tooltip, Typography, message, theme } from 'antd'
+import { useSession } from 'next-auth/react';
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
+import { redirect, useRouter } from 'next/navigation'
 
 interface SignupFormData {
   name: string;
@@ -14,7 +15,17 @@ interface SignupFormData {
 const SignupPage = () => {
   const { Title, Text } = Typography
   const { token } = theme.useToken()
+
+  const router = useRouter();
   const [form] = Form.useForm();
+  const [messageApi, contextHolder] = message.useMessage();
+
+
+  const { data: session } = useSession();
+  if (session) {
+    messageApi.success("You are already logged in.");
+    router.push('/')
+  }
 
   const submitForm = async () => {
     let shouldRedirect = false;
@@ -32,13 +43,13 @@ const SignupPage = () => {
       })
       const data = await response.json();
       if (data.success) {
-        message.success(data.message || "Please login to continue");
+        messageApi.success(data.message || "Please login to continue");
         shouldRedirect = true;
       } else {
-        message.error(data.message || "Something went wrong");
+        messageApi.error(data.message || "Something went wrong");
       }
     } catch (error) {
-      message.error((error as Error).message || "Something went wrong");
+      messageApi.error((error as Error).message || "Something went wrong");
     }
 
     if (shouldRedirect) {
@@ -58,7 +69,7 @@ const SignupPage = () => {
         minHeight: 'calc(100vh - 70px)',
         padding: '24px 24px 64px',
       }}
-    >
+    >{contextHolder}
       <Flex
         vertical
         align="center"

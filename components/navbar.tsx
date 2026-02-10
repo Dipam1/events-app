@@ -1,20 +1,36 @@
 'use client';
 
-import { Layout, Menu, Button, theme, Flex } from 'antd';
+import { Layout, Menu, Button, theme, Flex, Avatar, Dropdown } from 'antd';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useThemeContext } from '@/app/providers';
 import ThemeToggler from './themeToggleButton';
 import { useSession, signOut } from 'next-auth/react';
-
+import { UserOutlined } from '@ant-design/icons';
 const { Header } = Layout;
 
 
 export default function Navbar() {
 
+  const items = [
+    {
+      key: '1',
+      label: <Link href="/dashboard/my-profile">My Profile</Link>,
+    },
+    {
+      key: '2',
+      label: <Link href="/dashboard/my-events">My Events</Link>,
+    },
+    {
+      key: '3',
+      label: <Button type="primary" onClick={() => signOut({ redirect: false })}>
+        Logout
+      </Button>
+    }]
+
   const { data: session, status } = useSession();
-  const pathname = usePathname();
+  const pathname = usePathname()
   const {
     token: { colorBgContainer },
   } = theme.useToken();
@@ -81,13 +97,23 @@ export default function Navbar() {
       />
 
       <ThemeToggler />
-      <Flex align="center" gap="small">
-        {!isAuthPage && status != 'authenticated' ? (<Link href="/login">
-          <Button type="primary">Sign In</Button>
-        </Link>) :
-          <Button type='primary' onClick={() => signOut({ redirect: false })}>Logout</Button>}
-      </Flex>
+      <Flex align="center" gap="small" style={{ justifyContent: 'flex-end' }}>
+        {(!isAuthPage && !session) && (
+          <Link href="/login">
+            <Button type="primary">Sign In</Button>
+          </Link>
+        )}
 
+        {session && (
+          <Dropdown menu={{ items }} trigger={['click']}>
+            <Avatar
+              src={session.user?.image}
+              icon={!session.user?.image && <UserOutlined />}
+              style={{ cursor: 'pointer', border: `1px solid ${mode === 'dark' ? '#333' : '#eee'}` }}
+            />
+          </Dropdown>
+        )}
+      </Flex>
     </Header>
   );
 }
