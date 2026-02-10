@@ -6,13 +6,28 @@ export async function GET() {
     const session = await auth();
     if(!session) return new Response("Unauthorized", { status: 401 });
 
-    const ourUser = await prisma.user.findFirstOrThrow({
-      where: {
-        id: session.user.id
-      }
+    const ourUser = await prisma.user.findFirst({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        profilePictureUrl: true,
+        phoneNumber: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        isVerified: true,
+      },
     });
-    if(!ourUser) return new Response("User not found", { status: 404 });
-    return new Response(JSON.stringify(ourUser));
+
+    if (!ourUser) {
+      return new Response("User not found", { status: 404 });
+    }
+
+    return new Response(JSON.stringify(ourUser), {
+      headers: { "Content-Type": "application/json" },
+    });
 
   } catch (err) {
     console.error("Error fetching user session:", err);

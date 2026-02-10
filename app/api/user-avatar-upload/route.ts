@@ -24,19 +24,31 @@ export async function GET(req: NextRequest) {
     }
 
     // Extract and validate query parameters
-    const filename = req.nextUrl.searchParams.get("filename");
-    const type = req.nextUrl.searchParams.get("type");
+    const rawFilename = req.nextUrl.searchParams.get("filename") || "";
+    const type = (req.nextUrl.searchParams.get("type") || "").trim();
 
-    if (!filename?.trim()) {
+    if (!rawFilename.trim()) {
       return NextResponse.json(
         { error: "Filename is required and cannot be empty" },
         { status: 400 },
       );
     }
 
-    if (!type?.trim()) {
+    // Sanitize filename: take basename and allow only safe characters
+    const basename = rawFilename.split(/[/\\]/).pop() || "";
+    const sanitizedBasename = basename.replace(/[^A-Za-z0-9._-]/g, "");
+    if (!sanitizedBasename) {
       return NextResponse.json(
-        { error: "Content-Type is required" },
+        { error: "Filename contains no valid characters after sanitization" },
+        { status: 400 },
+      );
+    }
+
+    // Validate MIME type against an allowlist
+    const allowedTypes = new Set(["image/png", "image/jpeg", "image/webp"]);
+    if (!type || !allowedTypes.has(type)) {
+      return NextResponse.json(
+        { error: "Invalid or unsupported content type" },
         { status: 400 },
       );
     }
@@ -55,8 +67,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Create unique filename with timestamp to avoid collisions
-    const uniqueFilename = `${filename}-${Date.now()}`;
+    // Create unique filename with timestamp to avoid collisions using sanitized basename
+    const uniqueFilename = `${sanitizedBasename}-${Date.now()}`;
 
     // Initialize S3 client with credentials
     const client = new S3Client({
@@ -68,7 +80,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Define S3 put object command
-    const contentType = type.trim() || undefined;
+    const contentType = type || undefined;
     const command = new PutObjectCommand({
       Bucket: bucketName,
       Key: `user/profile-picture/${uniqueFilename}`,

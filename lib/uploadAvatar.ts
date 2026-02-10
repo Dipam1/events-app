@@ -11,19 +11,29 @@ interface UploadResponse {
  */
 export default async function uploadAvatar(file: File): Promise<boolean> {
   try {
-    // Step 1: Get presigned URL from backend
+    // Step 1: Get presigned URL from backend (URL-encode query params)
     const filename = encodeURIComponent(file.name);
     const type = encodeURIComponent(file.type || "");
 
-    const preSignedRes = await fetch(
+    const preSignedUrlRes = await fetch(
       `/api/user-avatar-upload?filename=${filename}&type=${type}`,
     );
 
-    if (!preSignedRes.ok) {
-      throw new Error(`Failed to get signed URL: ${await preSignedRes.text()}`);
+    if (!preSignedUrlRes.ok) {
+      throw new Error(`Failed to get signed URL: ${await preSignedUrlRes.text()}`);
     }
 
-    const { url, cleanUrl } = (await preSignedRes.json()) as UploadResponse;
+    let presignedJson: UploadResponse;
+    try {
+      presignedJson = (await preSignedUrlRes.json()) as UploadResponse;
+    } catch (err) {
+      throw new Error(`Invalid JSON from presigned URL response: ${String(err)}`);
+    }
+
+    const { url, cleanUrl } = presignedJson;
+    if (!url || typeof url !== "string") {
+      throw new Error(`Presigned response missing valid 'url' field`);
+    }
 
     // Step 2: Upload file to S3 using presigned URL
     const uploadRes = await fetch(url, {
@@ -51,7 +61,7 @@ export default async function uploadAvatar(file: File): Promise<boolean> {
 
     return true;
   } catch (err) {
-    console.error("Avatar upload error:", err);
-    return false;
+    console.error("uploadAvatar failed:", err);
+    throw err;
   }
 }
