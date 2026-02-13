@@ -93,6 +93,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!presignedUrl) {
+
       console.error("Failed to generate presigned URL");
       return NextResponse.json(
         { error: "Failed to generate upload URL" },
