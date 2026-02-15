@@ -11,12 +11,12 @@ const AddVideoModal = ({ open, setOpen }: AddVideoModalProps) => {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
 
-    const onFinish = (values: any) => {
+    const onFinish = (values: { video: File; title: string; description: string }) => {
         console.log('Form values:', values);
         setOpen(false);
     };
 
-    const handleBeforeUpload = async (file: any) => {
+    const handleBeforeUpload = async (file: File) => {
         try {
             setIsUploading(true);
             setUploadProgress(0);
@@ -57,8 +57,13 @@ const AddVideoModal = ({ open, setOpen }: AddVideoModalProps) => {
                     throw new Error('Failed to upload file to S3');
                 }
                 // Update progress after each chunk uploads
-                const progress = Math.round(((i + 1) / totalChunks) * 100);
-                setUploadProgress(progress);
+                let currentProgress = Math.round((i / totalChunks) * 100);
+                const nextProgress = Math.round(((i + 1) / totalChunks) * 100);
+                while (currentProgress < nextProgress) {
+                    setUploadProgress(currentProgress);
+                    await new Promise(resolve => setTimeout(resolve, 8));
+                    currentProgress++;
+                }
             }
 
 
@@ -104,7 +109,6 @@ const AddVideoModal = ({ open, setOpen }: AddVideoModalProps) => {
                         <Progress
                             type="circle"
                             percent={uploadProgress}
-                            width={80}
                             format={(percent) => `${percent}%`}
                         />
                         <p style={{ marginTop: 8, textAlign: 'center', color: '#666' }}>

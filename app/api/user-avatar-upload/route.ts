@@ -1,7 +1,7 @@
-import { auth } from "@/lib/auth";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, isAuthError } from "@/lib/api-middleware";
 
 /**
  * Generates a presigned URL for direct S3 file upload
@@ -15,13 +15,9 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
   try {
     // Validate authentication
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized - valid session required" },
-        { status: 401 },
-      );
-    }
+    const authResult = await requireAuth();
+    if (isAuthError(authResult)) return authResult.error;
+    const { session } = authResult;
 
     // Extract and validate query parameters
     const rawFilename = req.nextUrl.searchParams.get("filename") || "";

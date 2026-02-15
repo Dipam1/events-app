@@ -1,4 +1,3 @@
-import { auth } from "@/lib/auth";
 import {
   CreateMultipartUploadCommand,
   S3Client,
@@ -6,18 +5,15 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, isAuthError } from "@/lib/api-middleware";
 
 export async function GET(req: NextRequest) {
   try {
     const { AWS_ACCESS_KEY, AWS_SECRET_KEY, AWS_S3_REGION, AWS_BUCKET_NAME } =
       process.env;
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized - valid session required" },
-        { status: 401 },
-      );
-    }
+    const authResult = await requireAuth();
+    if (isAuthError(authResult)) return authResult.error;
+    const { session } = authResult;
 
     const filename = req.nextUrl.searchParams.get("filename");
     const filetype = req.nextUrl.searchParams.get("filetype");
@@ -40,7 +36,7 @@ export async function GET(req: NextRequest) {
     };
     const contentType = mimeTypeMap[filetype.toLowerCase()] || "video/mp4";
 
-    const KEY = `/videos/${session.user.id}/${filename}.${filetype}`;
+    const KEY = `videos/${session.user.id}/${filename}.${filetype}`;
 
     if (
       !AWS_ACCESS_KEY ||
@@ -77,11 +73,13 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log("Multipart upload initiated:", {
-      Key: KEY,
-      UploadId: uploadUrl.UploadId,
-      ContentType: contentType,
-    });
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Multipart upload initiated:", {
+        Key: KEY.substring(0, 20) + "...",
+        UploadId: uploadUrl.UploadId?.substring(0, 10) + "...",
+        ContentType: contentType,
+      });
+    }
 
     const urls = [];
 

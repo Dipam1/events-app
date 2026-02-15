@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireOrganizer, isAuthError } from "@/lib/api-middleware";
 
 export async function GET() {
 	try {
@@ -23,20 +23,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
 	try {
-		const session = await auth();
-		if (!session?.user?.id) {
-			return NextResponse.json(
-				{ error: "Unauthorized - valid session required" },
-				{ status: 401 },
-			);
-		}
-
-		if (session.user.role !== "ORGANIZER") {
-			return NextResponse.json(
-				{ error: "Only organizers can create events" },
-				{ status: 403 },
-			);
-		}
+		const authResult = await requireOrganizer();
+		if (isAuthError(authResult)) return authResult.error;
+		const { session } = authResult;
 
 		const body = await req.json();
 		const requiredFields = [
@@ -71,8 +60,38 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
+		// Validate and parse totalTickets
+		const totalTickets = parseInt(body.totalTickets, 10);
+		if (!Number.isInteger(totalTickets) || totalTickets <= 0) {
+			return NextResponse.json(
+				{ error: "totalTickets must be a positive integer" },
+				{ status: 400 },
+			);
+		}
+
+		// Validate and parse price
+		const price = parseFloat(body.price);
+		if (!Number.isFinite(price) || price < 0) {
+			return NextResponse.json(
+				{ error: "price must be a valid non-negative number" },
+				{ status: 400 },
+			);
+		}
+
 		const imageUrls = Array.isArray(body.imageUrls) ? body.imageUrls : [];
 		const tags = Array.isArray(body.tags) ? body.tags : [];
+
+		// Check for duplicate slug
+		const existingEvent = await prisma.event.findUnique({
+			where: { slug: body.slug },
+		});
+
+		if (existingEvent) {
+			return NextResponse.json(
+				{ error: `Event with slug "${body.slug}" already exists` },
+				{ status: 409 },
+			);
+		}
 
 		const event = await prisma.event.create({
 			data: {
@@ -85,8 +104,8 @@ export async function POST(req: NextRequest) {
 				locationAddress: body.locationAddress,
 				locationCity: body.locationCity,
 				locationZip: body.locationZip,
-				totalTickets: Number(body.totalTickets),
-				price: body.price,
+				totalTickets,
+				price,
 				type: body.type,
 				imageUrls,
 				tags,

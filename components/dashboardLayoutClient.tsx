@@ -3,7 +3,7 @@
 import { Layout, Menu, theme, Typography } from "antd";
 import { Content } from "antd/es/layout/layout";
 import Sider from "antd/es/layout/Sider";
-import { UserOutlined, CalendarOutlined, VideoCameraFilled, VideoCameraOutlined } from "@ant-design/icons";
+import { UserOutlined, CalendarOutlined, VideoCameraOutlined, MessageOutlined } from "@ant-design/icons";
 import { usePathname, useRouter } from "next/navigation";
 
 const { Title } = Typography;
@@ -32,6 +32,11 @@ const DashboardLayoutClient = ({
       key: "my-profile",
       icon: <UserOutlined />,
       label: "Profile Information",
+    },
+    {
+      key: "my-messages",
+      icon: <MessageOutlined />,
+      label: "Messages",
     },
     ...(isOrganizer
       ? [

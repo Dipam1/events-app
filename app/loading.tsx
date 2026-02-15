@@ -1,6 +1,17 @@
+import { Spin } from "antd"
+
 const Loading = () => {
   return (
-    <span className="loader"></span>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "60vh",
+      }}
+    >
+      <Spin size="large" />
+    </div>
   )
 }
 

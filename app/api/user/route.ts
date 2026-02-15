@@ -1,10 +1,12 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, isAuthError } from "@/lib/api-middleware";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    if(!session) return new Response("Unauthorized", { status: 401 });
+    const authResult = await requireAuth();
+    if (isAuthError(authResult)) return authResult.error;
+    const { session } = authResult;
 
     const ourUser = await prisma.user.findFirst({
       where: { id: session.user.id },
@@ -22,18 +24,19 @@ export async function GET() {
     });
 
     if (!ourUser) {
-      return new Response("User not found", { status: 404 });
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
     }
 
-    return new Response(JSON.stringify(ourUser), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json(ourUser);
 
   } catch (err) {
     console.error("Error fetching user session:", err);
-    return new Response(
-      JSON.stringify({ error: "Internal Server Error" }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
     );
 
   }

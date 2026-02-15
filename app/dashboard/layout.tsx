@@ -13,7 +13,7 @@ const DashboardLayout = async ({
         redirect("/login");
     }
 
-    const isOrganizer = session.user.role === "ORGANIZER";
+    const isOrganizer = session.user.role === "ORGANIZER" || session.user.role === "ADMIN";
 
     return (
         <DashboardLayoutClient isOrganizer={isOrganizer}>

@@ -1,16 +1,12 @@
-import { auth } from "@/lib/auth";
 import { CompleteMultipartUploadCommand, S3Client } from "@aws-sdk/client-s3";
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, isAuthError } from "@/lib/api-middleware";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized - valid session required" },
-        { status: 401 },
-      );
-    }
+    const authResult = await requireAuth();
+    if (isAuthError(authResult)) return authResult.error;
+    const { session } = authResult;
     const { AWS_ACCESS_KEY, AWS_SECRET_KEY, AWS_S3_REGION, AWS_BUCKET_NAME } =
       process.env;
 
@@ -62,18 +58,28 @@ export async function POST(req: NextRequest) {
     }
 
     // Remap parts to have correct field names for AWS SDK (ETag, PartNumber)
-    const formattedParts = parts.map((part: any) => ({
-      ETag: part.etag || part.ETag,
-      PartNumber: part.partNumber || part.PartNumber,
-    }));
+    const formattedParts = parts.map(
+      (part: {
+        etag?: string;
+        ETag?: string;
+        partNumber?: number;
+        PartNumber?: number;
+      }) => ({
+        ETag: part.etag || part.ETag,
+        PartNumber: part.partNumber || part.PartNumber,
+      }),
+    );
 
-    console.log("Formatted parts for S3:", JSON.stringify(formattedParts, null, 2));
+    console.log(
+      "Formatted parts for S3:",
+      JSON.stringify(formattedParts, null, 2),
+    );
 
     // Reconstruct the same Key that was used in the start route
     // Key format from start: `/videos/${session.user.id}/${filename}.${filetype}`
     const key = filetype
-      ? `/videos/${session.user.id}/${filename}.${filetype}`
-      : `/videos/${session.user.id}/${filename}`;
+      ? `videos/${session.user.id}/${filename}.${filetype}`
+      : `videos/${session.user.id}/${filename}`;
 
     console.log("Using S3 Key:", key);
 
@@ -92,14 +98,7 @@ export async function POST(req: NextRequest) {
       UploadId: uploadID,
       Parts: formattedParts,
     });
-    const result = await s3.send(command);
-
-    if (!result) {
-      return NextResponse.json(
-        { error: "Failed to complete multipart upload" },
-        { status: 500 },
-      );
-    }
+    await s3.send(command);
 
     return NextResponse.json({
       success: true,

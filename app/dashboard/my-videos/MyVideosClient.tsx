@@ -1,15 +1,11 @@
 'use client'
 import AddVideoModal from "@/components/AddVideoModal";
 import { PlusOutlined } from "@ant-design/icons";
-
-import { Button, Card, Flex, theme } from "antd"
+import { Button, Card, Empty } from "antd"
 import { useState } from "react";
 
 const MyVideosClient = () => {
-    const { token } = theme.useToken();
     const [showModal, setShowModal] = useState(false);
-
-
 
     return (
         <div style={{ padding: 24 }}>
@@ -23,9 +19,14 @@ const MyVideosClient = () => {
                     </Button>
                 }
             >
-                <Flex align="center" gap="small">
-
-                </Flex>
+                <Empty 
+                    description="No videos uploaded yet"
+                    style={{ padding: '40px 0' }}
+                >
+                    <Button type="primary" onClick={() => setShowModal(true)}>
+                        Upload Your First Video
+                    </Button>
+                </Empty>
             </Card>
         </div >
     )

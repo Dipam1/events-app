@@ -78,7 +78,6 @@ export default function Navbar() {
             alt="Logo"
             width={32}
             height={32}
-            style={{ filter: mode === 'dark' ? 'invert(1)' : 'none' }}
           />
         </Link>
       </Flex>

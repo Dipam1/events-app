@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import { prisma } from "@/lib/prisma";
+import { emitSignupSuccess } from "@/lib/events/sendSignupEmail";
 
 const signupSchema = z.object({
   name: z.string().min(2),
@@ -41,8 +42,15 @@ export async function POST(req: NextRequest) {
     const createdUser = await prisma.user.create({
       data: user,
     });
-    console.log(createdUser);
     const { passwordHash: _, ...userWithoutPassword } = createdUser;
+
+    // Fire-and-forget emit; do not block the signup response on email delivery
+    try {
+      void emitSignupSuccess({ id: createdUser.id, email: createdUser.email, name: createdUser.name });
+    } catch (emitErr) {
+      console.error("emitSignupSuccess error:", emitErr);
+    }
+
     return NextResponse.json(
       { message: "User created successfully", user: userWithoutPassword },
       { status: 201 },

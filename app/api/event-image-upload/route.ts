@@ -1,4 +1,3 @@
-import { auth } from "@/lib/auth";
 import {
   S3Client,
   PutObjectCommand,
@@ -6,6 +5,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextRequest, NextResponse } from "next/server";
+import { requireOrganizer, isAuthError } from "@/lib/api-middleware";
 
 /**
  * GET: generates a presigned PUT URL for uploading an event image to S3
@@ -17,13 +17,9 @@ import { NextRequest, NextResponse } from "next/server";
  */
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id && session?.user?.role == "ORGANIZER") {
-      return NextResponse.json(
-        { error: "Unauthorized - valid session required" },
-        { status: 401 },
-      );
-    }
+    const authResult = await requireOrganizer();
+    if (isAuthError(authResult)) return authResult.error;
+    const { session } = authResult;
 
     const rawFilename = req.nextUrl.searchParams.get("filename") || "";
     const type = (req.nextUrl.searchParams.get("type") || "").trim();
@@ -67,7 +63,7 @@ export async function GET(req: NextRequest) {
 
     // Use a folder for event images and include user id for traceability
     const uniqueFilename = `${sanitizedBasename}-${Date.now()}`;
-    const key = `events/images/${session?.user?.id}/${uniqueFilename}`;
+    const key = `events/images/${session.user.id}/${uniqueFilename}`;
 
     const client = new S3Client({
       region,
@@ -112,18 +108,23 @@ export async function GET(req: NextRequest) {
  */
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized - valid session required" },
-        { status: 401 },
-      );
-    }
+    const authResult = await requireOrganizer();
+    if (isAuthError(authResult)) return authResult.error;
+    const { session } = authResult;
 
     const body = await req.json();
     const key = (body?.key || "").toString();
     if (!key) {
       return NextResponse.json({ error: "Key is required" }, { status: 400 });
+    }
+
+    // Validate ownership: key must start with user's ID prefix
+    const expectedPrefix = `events/images/${session.user.id}/`;
+    if (!key.startsWith(expectedPrefix)) {
+      return NextResponse.json(
+        { error: "Forbidden - you can only delete your own images" },
+        { status: 403 }
+      );
     }
 
     const region = process.env.AWS_S3_REGION;

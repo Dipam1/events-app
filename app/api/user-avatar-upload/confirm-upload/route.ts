@@ -1,6 +1,6 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, isAuthError } from "@/lib/api-middleware";
 
 /**
  * Confirms avatar upload completion and persists S3 URL to user profile
@@ -14,13 +14,9 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
   try {
     // Validate authentication
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized - valid session required" },
-        { status: 401 },
-      );
-    }
+    const authResult = await requireAuth();
+    if (isAuthError(authResult)) return authResult.error;
+    const { session } = authResult;
 
     // Extract and validate URL parameter
     const url = req.nextUrl.searchParams.get("url");
