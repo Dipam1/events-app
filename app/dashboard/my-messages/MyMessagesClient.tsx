@@ -1,18 +1,85 @@
 'use client'
-import { Card, Flex, Select, List, Avatar, Typography, Input, Button } from 'antd'
+import { Card, Flex, Select, List, Avatar, Input, Button } from 'antd'
 import MessageBlock from './MessageBlock'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
-const SearchLogic: React.FC = () => {
+type ConversationItem = {
+    id: string;
+    userId: string;
+    name: string;
+    avatar: string | null;
+    lastMessage: string;
+    lastMessageAt: string;
+};
 
+const MyMessagesClient = () => {
     const [options, setOptions] = useState<{ value: string; label: string }[]>([]);
+    const [messageList, setMessageList] = useState<any[]>([]);
+    const [selectedConversationId, setSelectedConversationId] = useState('');
+    const [message, setMessage] = useState('');
+    const [conversations, setConversations] = useState<ConversationItem[]>([]);
 
-    const onChange = (value: string) => {
+    useEffect(() => {
+        const loadConversations = async () => {
+            try {
+                const response = await fetch('/api/messages/conversations', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    setConversations(data);
+                } else {
+                    setConversations([]);
+                }
+            } catch (error) {
+                console.log(error)
+                setConversations([]);
+            }
+        };
+
+        loadConversations();
+    }, []);
+
+    const onSelectUser = async (value: string) => {
         console.log(`selected ${value}`);
-
         try {
+            const response = await fetch('/api/messages/find?id=' + value, {
+                method: "GET",
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            const data = await response.json();
+            const conversationId = data?.conversationId || '';
+            setSelectedConversationId(conversationId);
+            if (Array.isArray(data?.messages)) {
+                setMessageList(data.messages);
+            } else {
+                setMessageList([]);
+            }
+        } catch (error) {
+            console.log(error)
+        }
+    };
 
-
+    const onSelectConversation = async (conversationId: string) => {
+        setSelectedConversationId(conversationId);
+        try {
+            const response = await fetch('/api/messages/find?conversationId=' + conversationId, {
+                method: "GET",
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            const data = await response.json();
+            if (Array.isArray(data?.messages)) {
+                setMessageList(data.messages);
+            } else {
+                setMessageList([]);
+            }
         } catch (error) {
             console.log(error)
         }
@@ -20,8 +87,8 @@ const SearchLogic: React.FC = () => {
 
     const onSearch = async (value: string) => {
         console.log('search:', value);
-
         try {
+
             const userList = await fetch('/api/messages/search-user?query=' + value, {
                 method: 'GET',
                 headers: {
@@ -42,34 +109,48 @@ const SearchLogic: React.FC = () => {
         } catch (error) {
             console.log(error)
         }
-
     };
 
-    return (
-        <Select
-            showSearch={{ optionFilterProp: 'label', onSearch }}
-            onChange={onChange}
-            placeholder="Select a person"
-            options={options}
-            style={{ minWidth: 180 }}
-        />
-    )
-}
+    const handleSendMessage = async () => {
+        const trimmedMessage = message.trim();
+        if (!selectedConversationId || trimmedMessage.length === 0) {
+            return;
+        }
 
-const MyMessagesClient = () => {
-    const [message, setMessage] = useState('');
-
-    const handleSendMessage = () => {
-        console.log('Sending message:', message);
-        // TODO: Implement actual send logic
-        setMessage('');
+        try {
+            const response = await fetch('/api/messages/send-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    conversationId: selectedConversationId,
+                    content: trimmedMessage,
+                }),
+            }); 
+            const data = await response.json();
+            if (data && data.id) {
+                setMessageList((prev) => [data, ...prev]);
+            }
+            setMessage('');
+        } catch (error) {
+            console.log(error)
+        }
     };
 
     return (
         <div style={{ padding: 24 }}>
             <Card
                 title="My Messages"
-                extra={<SearchLogic />}
+                extra={(
+                    <Select
+                        showSearch={{ optionFilterProp: 'label', onSearch }}
+                        onChange={onSelectUser}
+                        placeholder="Select a person"
+                        options={options}
+                        style={{ minWidth: 180 }}
+                    />
+                )}
                 style={{ borderRadius: 16 }}
             >
                 <Flex gap="middle" style={{ minHeight: 'calc(100vh - 300px)' }}>
@@ -78,11 +159,11 @@ const MyMessagesClient = () => {
                         size='small'
                         itemLayout="horizontal"
                         header="Conversations"
-                        dataSource={[]} // TODO: Connect to real conversation data
-                        renderItem={(item: any) => (
-                            <List.Item style={{ cursor: 'pointer' }}>
+                        dataSource={conversations}
+                        renderItem={(item: ConversationItem) => (
+                            <List.Item style={{ cursor: 'pointer' }} onClick={() => onSelectConversation(item.id)}>
                                 <List.Item.Meta
-                                    avatar={<Avatar src={item.avatar} />}
+                                    avatar={<Avatar src={item.avatar || undefined} />}
                                     title={item.name}
                                     description={item.lastMessage}
                                 />
@@ -90,8 +171,10 @@ const MyMessagesClient = () => {
                         )}
                     />
                     <div style={{ flex: 1, padding: 16, width: "70%", display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                        <div className="message-top">
-                            <MessageBlock />
+                        <div className="message-top" style={{
+                            height: '100%'
+                        }}>
+                            <MessageBlock selected={selectedConversationId} messages={messageList} />
                         </div>
                         <div className="message-bottom" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                             <Input
@@ -107,7 +190,7 @@ const MyMessagesClient = () => {
                     </div>
                 </Flex>
             </Card>
-        </div>
+        </div >
     )
 }
 
