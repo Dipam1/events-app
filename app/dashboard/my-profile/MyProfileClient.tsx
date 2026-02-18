@@ -19,7 +19,7 @@ import {
   Col,
   Grid
 } from "antd";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { EditOutlined } from "@ant-design/icons";
 import uploadAvatar from "@/lib/uploadAvatar";
 

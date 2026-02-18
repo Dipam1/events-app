@@ -8,7 +8,6 @@ import { useThemeContext } from '@/app/providers';
 import ThemeToggler from './themeToggleButton';
 import { useSession, signOut } from 'next-auth/react';
 import { UserOutlined } from '@ant-design/icons';
-import { Suspense } from 'react';
 const { Header } = Layout;
 
 
@@ -97,23 +96,23 @@ export default function Navbar() {
 
       <ThemeToggler />
       <Flex align="center" gap="small" style={{ justifyContent: 'flex-end' }}>
-        <Suspense fallback={<Skeleton.Avatar active size="default" />}>
+          {status === 'loading' && <Skeleton.Avatar active size="default" />}
+
           {status === 'unauthenticated' && (
             <Link href="/login">
               <Button type="primary">Sign In</Button>
             </Link>
           )}
 
-          {session && status === 'authenticated' && (
+          {status === 'authenticated' && session && (
             <Dropdown menu={{ items }} trigger={['click']}>
               <Avatar
-                src={session.user?.image}
-                icon={!session.user?.image && <UserOutlined />}
+                src={session.user?.profilePictureUrl}
+                icon={!session.user?.profilePictureUrl && <UserOutlined />}
                 style={{ cursor: 'pointer', border: `1px solid ${mode === 'dark' ? '#333' : '#eee'}` }}
               />
             </Dropdown>
           )}
-        </Suspense>
       </Flex>
     </Header>
   );

@@ -25,9 +25,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!content || typeof content !== "string") {
+      return NextResponse.json(
+        { error: "Message content is required" },
+        { status: 400 },
+      );
+    }
+
     const trimmedContent = content.trim();
 
-    if (!content || typeof content !== "string" || trimmedContent === "") {
+    if (trimmedContent === "") {
       return NextResponse.json(
         { error: "Message content is required" },
         { status: 400 },
