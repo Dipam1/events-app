@@ -56,6 +56,8 @@ const Home = () => {
         style={{
           background: "transparent",
           padding: "24px 6vw 0",
+          height: "auto",
+          lineHeight: "normal",
         }}
       >
         <Row align="middle" justify="space-between" gutter={[16, 16]}>
@@ -69,7 +71,7 @@ const Home = () => {
             </Space>
           </Col>
           <Col>
-            <Space size="middle">
+            <Space size="small"  wrap={true}>
               <Button type="text">Browse</Button>
               <Button type="text">Pricing</Button>
               <Button type="text">Support</Button>

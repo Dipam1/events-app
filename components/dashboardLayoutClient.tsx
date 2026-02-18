@@ -64,6 +64,7 @@ const DashboardLayoutClient = ({
     >
       <Sider
         collapsible
+        breakpoint="lg"
         width="250px"
         style={{ background: token.colorBgContainer }}
       >

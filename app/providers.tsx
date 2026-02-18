@@ -2,7 +2,7 @@
 
 import { ConfigProvider, theme, App } from 'antd'
 import { SessionProvider } from 'next-auth/react'
-import React, { createContext, useContext, useMemo, useState, useEffect, useLayoutEffect } from 'react'
+import React, { createContext, useContext, useMemo, useState, useEffect } from 'react'
 import Loading from './loading'
 
 type ThemeMode = 'dark' | 'light'
@@ -52,7 +52,7 @@ const darkTheme = {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  // Initialize with saved theme on client, default on server to avoid hydration mismatch
+  // Initialize with saved theme on client; fall back on server
   const [mode, setMode] = useState<ThemeMode>(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme') as ThemeMode | null
@@ -65,15 +65,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Read theme from localStorage after hydration is complete
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as ThemeMode | null
-    if (savedTheme && (savedTheme === 'dark' || savedTheme === 'light')) {
-      setMode(savedTheme)
-    }
     setMounted(true)
-    document.documentElement.setAttribute('data-theme', mode)
-    document.documentElement.style.colorScheme = mode
     // Small delay to ensure theme is applied before showing content
     requestAnimationFrame(() => {
       setIsLoading(false)
@@ -105,27 +98,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <ThemeContext.Provider value={contextValue}>
-        <ConfigProvider 
+        <ConfigProvider
           theme={themeConfig}
           wave={{ disabled: true }} // Disable wave effect for better performance
           virtual={true} // Enable virtual scrolling for lists
         >
           <App>
-            {isLoading ? (
-              <div style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                background: mode === 'dark' ? '#141414' : '#fafafa',
-                zIndex: 9999,
-              }}>
-                <span className="loader"></span>
-              </div>
+            {!mounted || isLoading ? (
+              <Loading />
             ) : (
               children
             )}

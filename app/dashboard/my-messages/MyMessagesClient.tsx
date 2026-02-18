@@ -1,7 +1,8 @@
 'use client'
-import { Card, Flex, Select, List, Avatar, Input, Button } from 'antd'
-import MessageBlock from './MessageBlock'
-import React, { useEffect, useState } from 'react'
+import { Card, Flex, Select } from 'antd'
+import ConversationList from './ConversationList'
+import MessagesDisplay from './MessagesDisplay'
+import React, { useEffect, useState, useRef } from 'react'
 
 type ConversationItem = {
     id: string;
@@ -12,12 +13,29 @@ type ConversationItem = {
     lastMessageAt: string;
 };
 
+type MinimalMessage = {
+    id?: string;
+    senderId: string;
+    senderName?: string | null;
+    profilePictureUrl?: string | null;
+    content: string;
+    createdAt: string;
+    conversationId?: string;
+};
+
 const MyMessagesClient = () => {
     const [options, setOptions] = useState<{ value: string; label: string }[]>([]);
-    const [messageList, setMessageList] = useState<any[]>([]);
+    const [messageList, setMessageList] = useState<MinimalMessage[]>([]);
     const [selectedConversationId, setSelectedConversationId] = useState('');
     const [message, setMessage] = useState('');
     const [conversations, setConversations] = useState<ConversationItem[]>([]);
+    const messageContainerRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
+
+    useEffect(() => {
+        if (messageContainerRef.current) {
+            messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+        }
+    }, [messageList, selectedConversationId]);
 
     useEffect(() => {
         const loadConversations = async () => {
@@ -56,6 +74,7 @@ const MyMessagesClient = () => {
             const conversationId = data?.conversationId || '';
             setSelectedConversationId(conversationId);
             if (Array.isArray(data?.messages)) {
+                // API now returns minimal message shape already
                 setMessageList(data.messages);
             } else {
                 setMessageList([]);
@@ -127,9 +146,10 @@ const MyMessagesClient = () => {
                     conversationId: selectedConversationId,
                     content: trimmedMessage,
                 }),
-            }); 
+            });
             const data = await response.json();
             if (data && data.id) {
+                // API returns minimal message shape
                 setMessageList((prev) => [data, ...prev]);
             }
             setMessage('');
@@ -139,58 +159,39 @@ const MyMessagesClient = () => {
     };
 
     return (
-        <div style={{ padding: 24 }}>
-            <Card
-                title="My Messages"
-                extra={(
-                    <Select
-                        showSearch={{ optionFilterProp: 'label', onSearch }}
-                        onChange={onSelectUser}
-                        placeholder="Select a person"
-                        options={options}
-                        style={{ minWidth: 180 }}
-                    />
-                )}
-                style={{ borderRadius: 16 }}
-            >
-                <Flex gap="middle" style={{ minHeight: 'calc(100vh - 300px)' }}>
-                    <List
-                        style={{ width: "30%" }}
-                        size='small'
-                        itemLayout="horizontal"
-                        header="Conversations"
-                        dataSource={conversations}
-                        renderItem={(item: ConversationItem) => (
-                            <List.Item style={{ cursor: 'pointer' }} onClick={() => onSelectConversation(item.id)}>
-                                <List.Item.Meta
-                                    avatar={<Avatar src={item.avatar || undefined} />}
-                                    title={item.name}
-                                    description={item.lastMessage}
-                                />
-                            </List.Item>
-                        )}
-                    />
-                    <div style={{ flex: 1, padding: 16, width: "70%", display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                        <div className="message-top" style={{
-                            height: '100%'
-                        }}>
-                            <MessageBlock selected={selectedConversationId} messages={messageList} />
-                        </div>
-                        <div className="message-bottom" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                            <Input
-                                placeholder="Type a message..."
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                                onPressEnter={handleSendMessage}
-                            />
-                            <Button className='mt-2' type="primary" onClick={handleSendMessage}>
-                                Send
-                            </Button>
-                        </div>
-                    </div>
-                </Flex>
-            </Card>
-        </div >
+        <Card
+            title="My Messages"
+            extra={(
+                <Select
+                    showSearch={{ optionFilterProp: 'label', onSearch }}
+                    onChange={onSelectUser}
+                    placeholder="Select a person"
+                    options={options}
+                    style={{ minWidth: 180 }}
+                />
+            )}
+            style={{ borderRadius: 16 }}
+        >
+            <Flex gap="middle" style={{ height: 'calc(100vh - 300px)' }}>
+                <ConversationList
+                    conversations={conversations}
+                    selectedConversationId={selectedConversationId}
+                    onSelectConversation={onSelectConversation}
+                />
+
+                <MessagesDisplay
+                    selectedConversationId={selectedConversationId}
+                    messageList={messageList}
+                    message={message}
+                    messageContainerRef={messageContainerRef}
+                    onMessageChange={setMessage}
+                    onSendMessage={handleSendMessage}
+                    onReceiveMessage={(m) => {
+                        setMessageList((prev) => [m, ...prev])
+                    }}
+                />
+            </Flex>
+        </Card>
     )
 }
 

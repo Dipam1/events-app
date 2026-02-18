@@ -42,7 +42,13 @@ export async function findConversationMessages(conversationId: string) {
     },
     take: 20,
     include: {
-      sender: true,
+      sender: {
+        select: {
+          id: true,
+          name: true,
+          profilePictureUrl: true,
+        },
+      },
     },
   });
 }

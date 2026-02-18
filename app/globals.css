@@ -65,19 +65,6 @@ body {
   border-bottom: none;
 }
 
-/* Critical button styles */
-.ant-btn {
-  display: inline-block;
-  padding: 4px 15px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.ant-btn-primary {
-  background-color: #845A87;
-  border-color: #845A87;
-  color: #fff;
-}
 
 /* Loading spinner with immediate styles */
 .loader {

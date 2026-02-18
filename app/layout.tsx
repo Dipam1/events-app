@@ -48,10 +48,10 @@ export default function RootLayout({
         className={` ${bricolageGrotesque.variable} antialiased`}
         suppressHydrationWarning
       >
-          <Providers>
-            <Navbar />
-            {children}
-          </Providers>
+        <Providers>
+          <Navbar />
+          {children}
+        </Providers>
       </body>
     </html>
   );

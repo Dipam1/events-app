@@ -15,10 +15,16 @@ import {
   Input,
   Upload,
   message,
+  Row,
+  Col,
+  Grid
 } from "antd";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { EditOutlined } from "@ant-design/icons";
 import uploadAvatar from "@/lib/uploadAvatar";
+
+const { useBreakpoint } = Grid;
+
 
 const MyProfileClient = () => {
   const { user, error, isLoading, mutate } = useUser();
@@ -26,6 +32,12 @@ const MyProfileClient = () => {
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editedValue, setEditedValue] = useState<string>("");
   const [messageApi, contextHolder] = message.useMessage();
+
+  const breakpoint = useBreakpoint();
+  const descriptionLayout = breakpoint.lg ? "horizontal" : "vertical";
+
+
+
 
   /** Handle profile field edits - TODO: implement actual save logic */
   const onEditProfile = useCallback((key: string, value: string) => {
@@ -89,11 +101,10 @@ const MyProfileClient = () => {
   return (
     <Card
       style={{ borderRadius: 16, background: token.colorBgContainer }}
-      styles={{ body: { padding: 24 } }}
     >
       {contextHolder}
-      <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
-        <div style={{ position: "relative", cursor: "pointer" }} className="avatar-container">
+      <Row style={{ display: "flex", gap: 20, alignItems: "center" }}>
+        <Col style={{ position: "relative", cursor: "pointer" }} className="avatar-container">
           <Avatar size={96} src={user.profilePictureUrl || undefined}>
             {!user.profilePictureUrl && user.name ? user.name.charAt(0) : ""}
           </Avatar>
@@ -133,30 +144,27 @@ const MyProfileClient = () => {
               <EditOutlined style={{ fontSize: 22, color: "#fff" }} />
             </Upload>
           </div>
-        </div>
+        </Col>
         <div>
           <Typography.Title style={{ marginBottom: 4 }}>{user.name}</Typography.Title>
           <Typography.Text type="secondary">{user.email}</Typography.Text>
         </div>
-      </div>
+      </Row>
 
       <Divider />
 
-      <Descriptions column={1} bordered>
+      <Descriptions
+        column={1}
+        bordered
+        layout={descriptionLayout}
+      >
         {[
           { label: "Phone", key: "phoneNumber", raw: user.phoneNumber || "" },
           { label: "Email", key: "email", raw: user.email || "" },
         ].map((f) => (
           <Descriptions.Item key={f.key} label={f.label}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-              }}
-            >
-              <div style={{ flex: 1 }}>
+            <Row>
+              <Col style={{ flex: 1 }}>
                 {editingKey === f.key ? (
                   <Input
                     value={editedValue}
@@ -174,8 +182,8 @@ const MyProfileClient = () => {
                       : f.raw || "-"}
                   </span>
                 )}
-              </div>
-              <div style={{ marginLeft: 12 }}>
+              </Col>
+              <Col>
                 <Button
                   type="link"
                   onClick={() => {
@@ -188,8 +196,8 @@ const MyProfileClient = () => {
                 >
                   {editingKey === f.key ? "Save" : "Edit"}
                 </Button>
-              </div>
-            </div>
+              </Col>
+            </Row>
           </Descriptions.Item>
         ))}
       </Descriptions>

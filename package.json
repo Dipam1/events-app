@@ -14,6 +14,7 @@
     "@aws-sdk/s3-request-presigner": "^3.986.0",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^6.19.2",
+    "@upstash/redis": "^1.36.2",
     "antd": "^6.2.3",
     "bcrypt": "^6.0.0",
     "dayjs": "^1.11.19",
@@ -24,6 +25,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.1",
+    "socket.io-client": "^4.8.3",
     "swr": "^2.4.0",
     "ws": "^8.19.0",
     "zod": "^4.3.6"

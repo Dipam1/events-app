@@ -1,6 +1,6 @@
 'use client';
 
-import { Layout, Menu, Button, theme, Flex, Avatar, Dropdown } from 'antd';
+import { Layout, Menu, Button, theme, Flex, Avatar, Dropdown, Skeleton } from 'antd';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -8,6 +8,7 @@ import { useThemeContext } from '@/app/providers';
 import ThemeToggler from './themeToggleButton';
 import { useSession, signOut } from 'next-auth/react';
 import { UserOutlined } from '@ant-design/icons';
+import { Suspense } from 'react';
 const { Header } = Layout;
 
 
@@ -35,7 +36,6 @@ export default function Navbar() {
     token: { colorBgContainer },
   } = theme.useToken();
 
-  const isAuthPage = pathname === '/login' || pathname === '/signup';
   const themeContext = useThemeContext();
   const { mode } = themeContext;
 
@@ -97,21 +97,23 @@ export default function Navbar() {
 
       <ThemeToggler />
       <Flex align="center" gap="small" style={{ justifyContent: 'flex-end' }}>
-        {(!isAuthPage && !session) && (
-          <Link href="/login">
-            <Button type="primary">Sign In</Button>
-          </Link>
-        )}
+        <Suspense fallback={<Skeleton.Avatar active size="default" />}>
+          {status === 'unauthenticated' && (
+            <Link href="/login">
+              <Button type="primary">Sign In</Button>
+            </Link>
+          )}
 
-        {session && (
-          <Dropdown menu={{ items }} trigger={['click']}>
-            <Avatar
-              src={session.user?.image}
-              icon={!session.user?.image && <UserOutlined />}
-              style={{ cursor: 'pointer', border: `1px solid ${mode === 'dark' ? '#333' : '#eee'}` }}
-            />
-          </Dropdown>
-        )}
+          {session && status === 'authenticated' && (
+            <Dropdown menu={{ items }} trigger={['click']}>
+              <Avatar
+                src={session.user?.image}
+                icon={!session.user?.image && <UserOutlined />}
+                style={{ cursor: 'pointer', border: `1px solid ${mode === 'dark' ? '#333' : '#eee'}` }}
+              />
+            </Dropdown>
+          )}
+        </Suspense>
       </Flex>
     </Header>
   );

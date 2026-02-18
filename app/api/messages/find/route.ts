@@ -28,7 +28,16 @@ export async function GET(req: NextRequest) {
 
     if (conversationId) {
       const messages = await findConversationMessages(conversationId);
-      return NextResponse.json({ conversationId, messages });
+      const minimal = messages.map((m) => ({
+        id: m.id,
+        senderId: m.sender?.id || m.senderId,
+        senderName: m.sender?.name || null,
+        profilePictureUrl: m.sender?.profilePictureUrl || null,
+        content: m.content,
+        createdAt: m.createdAt,
+      }));
+
+      return NextResponse.json({ conversationId, messages: minimal });
     }
 
     let conversation = await findConversationWithIds(userId, recieverId as string);
@@ -37,8 +46,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ conversationId: conversation.id, messages: [] });
     }
     const messages = await findConversationMessages(conversation.id);
+    const minimal = messages.map((m) => ({
+      id: m.id,
+      senderId: m.sender?.id || m.senderId,
+      senderName: m.sender?.name || null,
+      profilePictureUrl: m.sender?.profilePictureUrl || null,
+      content: m.content,
+      createdAt: m.createdAt,
+    }));
 
-    return NextResponse.json({ conversationId: conversation.id, messages });
+    return NextResponse.json({ conversationId: conversation.id, messages: minimal });
   } catch (error) {
     console.log(error);
     return NextResponse.json(
